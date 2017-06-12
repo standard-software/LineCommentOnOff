@@ -1,0 +1,302 @@
+/*------------------------------------------------------------
+LineCommentOnOff
+----------------------------------------
+ModuleName:   LineCommentOnOff  EmEditor Macro
+FileName:     LineCommentOnOff.jsee
+Description:  プログラムの行コメントをOnOff切り替える
+----------------------------------------
+All  Right Reserved:
+    Name:     Standard Software
+    URL:      https://www.facebook.com/stndardsoftware/
+--------------------------------------
+Version:      2017/06/10
+// ------------------------------------------------------------*/
+
+//----------------------------------------
+//include st.js
+//--------------------
+var fso = new ActiveXObject('Scripting.FileSystemObject')
+//--------------------
+var basePath = fso.GetParentFolderName(ScriptFullName);
+var includeFileName = '.\\lib\\stslib_win_wsh.js'
+//--------------------
+eval( 
+  fso.OpenTextFile(
+    fso.BuildPath(basePath, includeFileName), 1)
+  .ReadAll()
+);
+//--------------------
+var basePath = fso.GetParentFolderName(ScriptFullName);
+var includeFileName = '.\\lib\\stslib_core.js'
+//--------------------
+eval( 
+  string_LoadFromFile(
+    fso.BuildPath(basePath, includeFileName), 
+    encodingTypeJpCharCode.UTF8_BOM)
+);
+//----------------------------------------
+
+//上書きされてしまうので対応する
+var alert = function (message) {
+  OutputBar.writeln(message);
+};
+
+(function () {
+
+  var stsLib = require('stsLib');
+  //var s = stsLib.string;
+
+  //stsLib.test.test_stslib_core();
+
+  //----------------------------------------
+  //◇設定
+  //----------------------------------------
+
+  var lastLineBreakOption = { ON:0, OFF:1 };
+  var lastLineBreak = lastLineBreakOption.ON;
+
+  var lineCommentChar = document.Config.Highlight.LineComment1;
+
+  lineCommentChar = stsLib.string.includeEnd(lineCommentChar, ' ');
+
+  //----------------------------------------
+  //◇行コメントアウト処理
+  //----------------------------------------
+
+  //空行かどうか判断する
+  var isEmptyLine = function (line) {
+    var s = stsLib.string;
+    return s.isIncludeAll(line, [' ', '\t', '\r', '\n', '　']);
+  };
+
+  //行がコメントアウトされているかどうかを判断する関数
+  var isLineComment = function (line, commentMark) {
+    //alert('isLineComment');
+    var s = stsLib.string;
+    commentMark = s.excludeEnd(commentMark, ' ');
+    if (s.startsWith(
+      s.trimStart(line, [' ', '\t']), commentMark)) {
+      //alert('isLineComment True');
+      return true;
+    } else {
+      //alert('isLineComment false');
+      return false;
+    }
+  };
+
+  //複数行が全てコメントアウトされているかどうか判断する関数
+  var isLinesComment = function (top, bottom, commentMark) {
+    var line;
+    for (var i = top; i <= bottom; i += 1) {
+      line = document.GetLine(i);
+      if (!isEmptyLine(line)) {
+        if (!isLineComment(line, commentMark)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  //1行をコメントアウトする関数
+  var setLineCommentOn = function (line, 
+    indentPosition, commentMark) {
+    var s = stsLib.string;
+    var d = stsLib.debug;
+    d.assert(indentPosition < line.length);
+    return s.start(line, indentPosition) + 
+      commentMark + 
+      s.end(line, line.length - indentPosition);
+  };
+
+  //複数行をコメントアウトする関数
+  var setLinesCommentOn = function (top, bottom, commentMark, lastLineBreak) {
+    var d = stsLib.debug;
+    var c = stsLib.compare;
+    var s = stsLib.string;
+    d.assert(c.orValue(lastLineBreak, 
+      lastLineBreakOption.ON, lastLineBreakOption.OFF));
+    var MAX_INT= 1000;
+    var indent = MAX_INT;
+    var line;
+
+    //選択範囲のインデント最小値を求める
+    for (var i = top; i <= bottom; i += 1) {
+      line = document.GetLine(i, eeGetLineWithNewLines);
+      if (!isEmptyLine(line)) {
+        indent = Math.min(indent, 
+          line.length - s.trimStart(line, [' ', '\t']).length);
+      }
+    }
+    //alert('indent:' + indent);
+    if (indent === MAX_INT) {
+      indet = 0;
+    }
+    var result = '';
+    for (var i = top; i <= bottom; i += 1) {
+      line = document.GetLine(i, eeGetLineWithNewLines);
+      if (!isEmptyLine(line)) {
+        result += setLineCommentOn(line, indent, commentMark);
+      } else {
+        result += line;
+      }
+    }
+    if (lastLineBreak === lastLineBreakOption.OFF) {
+      return s.trimEnd(result, ['\r', '\n']);
+    } else {
+      return result;
+    }
+  }
+
+  //1行をコメント解除する関数
+  var setLineCommentOff = function (line, commentMark) {
+    var s = stsLib.string;
+    if (isLineComment(line, commentMark)) {
+      var commentMarkTrimEnd = s.excludeEnd(commentMark, ' ');
+      if (commentMark === commentMarkTrimEnd) {
+        return s.startFirstDelim(line, commentMark) +
+          s.endFirstDelim(line, commentMark);
+      } else {
+        var index1 = s.indexOfFirst(line, commentMark);
+        var index2 = s.indexOfFirst(line, commentMarkTrimEnd);
+        if (index1 === -1) {
+          return s.startFirstDelim(line, commentMarkTrimEnd) +
+            s.endFirstDelim(line, commentMarkTrimEnd);
+        } else if (index1 <= index2) {
+          return s.startFirstDelim(line, commentMark) +
+            s.endFirstDelim(line, commentMark);
+        } else {
+          return s.startFirstDelim(line, commentMarkTrimEnd) +
+            s.endFirstDelim(line, commentMarkTrimEnd);
+        }
+      }
+    } else {
+      return line;
+    }
+  };
+
+  //複数行をコメント解除する関数
+  var setLinesCommentOff = function (top, bottom, commentMark, lastLineBreak) {
+    var d = stsLib.debug;
+    var c = stsLib.compare;
+    d.assert(c.orValue(lastLineBreak, 
+      lastLineBreakOption.ON, lastLineBreakOption.OFF));
+    var line;
+    var result = '';
+    for (var i = top; i <= bottom; i += 1) {
+      line = document.GetLine(i, eeGetLineWithNewLines);
+      result += setLineCommentOff(line, commentMark);
+    }
+
+    if (lastLineBreak === lastLineBreakOption.OFF) {
+      return s.trimEnd(result, ['\r', '\n']);
+    } else {
+      return result;
+    }
+  };
+
+  //複数行のコメントを切り替える関数
+  var setLinesCommentOnOff = function (top, bottom, commentMark, lastLineBreak) {
+    //全行がコメントアウトならコメント解除
+    if (isLinesComment(top, bottom, commentMark)) {
+      alert('setLinesCommentOff')
+      return setLinesCommentOff(top, bottom, commentMark, lastLineBreak);
+    } else {
+      alert('setLinesCommentOn')
+      return setLinesCommentOn(top, bottom, commentMark, lastLineBreak);
+    }
+  };
+
+  //----------------------------------------
+  //◇行選択にする
+  //----------------------------------------
+  //  ・  lastLineBreakOption で
+  //      最終行の改行コードまで選択するかしないかを選べる
+  //  ・  lastLineBreakOption.OFFだと
+  //      少しちらつく
+  //      document.GetLine のためだと思われる
+  //----------------------------------------
+  var selectLinesTopToBottom = function (top, bottom, lastLineBreak) {
+    var d = stsLib.debug;
+    var c = stsLib.compare;
+    d.assert(top <= bottom);
+    d.assert(c.orValue(lastLineBreak, 
+      lastLineBreakOption.ON, lastLineBreakOption.OFF));
+    switch (lastLineBreak) {
+    case lastLineBreakOption.ON:
+      sel.SetActivePoint(eePosLogical, 1, top, false);
+      sel.SetActivePoint(eePosLogical, 1, bottom + 1, true);
+      break;
+    case lastLineBreakOption.OFF:
+      var lineLength = document.GetLine(bottom).length;
+      sel.SetActivePoint(eePosLogical, 1, top, false);
+      sel.SetActivePoint(eePosLogical, 
+        lineLength + 1, bottom, true);
+      break;
+    }
+  };
+
+  var selectLinesBottomToTop = function (top, bottom, lastLineBreak) {
+    var d = stsLib.debug;
+    var c = stsLib.compare;
+    d.assert(top <= bottom);
+    d.assert(c.orValue(lastLineBreak, 
+      lastLineBreakOption.ON, lastLineBreakOption.OFF));
+    switch (lastLineBreak) {
+    case lastLineBreakOption.ON:
+      sel.SetActivePoint(eePosLogical, 1, bottomY + 1, false);
+      sel.SetActivePoint(eePosLogical, 1, topY, true);
+      break;
+    case lastLineBreakOption.OFF:
+      sel.SetActivePoint(eePosLogical, 
+        document.GetLine(bottom).length + 1, bottom, false);
+      sel.SetActivePoint(eePosLogical, 1, top, true);
+      break;
+    }
+  };
+
+  //OutputBar.Clear();
+
+  var sel = document.selection;
+  var topY = sel.GetTopPointY(eePosLogical);
+  var bottomY = sel.GetBottomPointY(eePosLogical);
+
+  //行選択状態で最後に改行コードがついている場合は
+  //処理範囲のtopとbottomを正しく修正している
+  if (topY !== bottomY) {
+    //複数行選択
+    if (sel.GetBottomPointX(eePosLogical) === 1) {
+      //下の選択が1列目=最終文字は改行含めた選択
+      alert('bottomY -= 1;');
+      bottomY -= 1;
+    }
+  }
+
+  if (topY === bottomY) {
+    alert('選択範囲が単一行の場合');
+
+    //行選択
+    selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+    sel.Text = setLinesCommentOnOff(topY, bottomY,
+      lineCommentChar, lastLineBreak);
+    selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+  } else {
+    alert('選択範囲が複数行の場合');
+    if (sel.GetActivePointY(eePosLogical) !== topY) {
+      alert('複数行選択:上から下');
+      selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+      sel.Text = setLinesCommentOnOff(topY, bottomY, 
+        lineCommentChar, lastLineBreak);
+      selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+
+    } else {
+      alert('複数行選択:下から上');
+      selectLinesBottomToTop(topY, bottomY, lastLineBreak);
+      sel.Text = setLinesCommentOnOff(topY, bottomY, 
+        lineCommentChar, lastLineBreak);
+      selectLinesBottomToTop(topY, bottomY, lastLineBreak);
+    }
+  } 
+
+  alert('finish');
+}());
