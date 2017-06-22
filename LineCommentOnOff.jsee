@@ -9,7 +9,7 @@ All  Right Reserved:
     Name:     Standard Software
     URL:      https://www.facebook.com/stndardsoftware/
 --------------------------------------
-Version:      2017/06/16
+Version:      2017/06/22
 // ------------------------------------------------------------*/
 
 //----------------------------------------
@@ -70,9 +70,6 @@ if (OUTPUT_MODE === 'ON') {
   //◇設定
   //----------------------------------------
 
-  //動作モードを選択ラスト改行ありにする
-  var lastLineBreak = e.lastLineBreakOption.ON;
-
   //行コメントアウト記号取得
   var lineCommentMark = document.Config.Highlight.LineComment1;
   //行コメントアウト記号の最後にスペースを追加
@@ -114,23 +111,23 @@ if (OUTPUT_MODE === 'ON') {
         alert('選択範囲が単一行の場合');
 
         //行選択
-        e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+        e.selectLinesTopToBottom(topY, bottomY);
         sel.Text = e.setRangeCommentOnOff(topY, bottomY, commentBegin, commentEnd);
-        e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+        e.selectLinesTopToBottom(topY, bottomY);
       } else {
         alert('選択範囲が複数行の場合');
         if (sel.GetActivePointY(eePosLogical) !== topY) {
           alert('複数行選択:上から下');
           alert(e.selectLinesTopToBottom.toString());
-          e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+          e.selectLinesTopToBottom(topY, bottomY);
           sel.Text = e.setRangeCommentOnOff(topY, bottomY, commentBegin, commentEnd);
-          e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+          e.selectLinesTopToBottom(topY, bottomY);
 
         } else {
           alert('複数行選択:下から上');
-          e.selectLinesBottomToTop(topY, bottomY, lastLineBreak);
+          e.selectLinesBottomToTop(topY, bottomY);
           sel.Text = e.setRangeCommentOnOff(topY, bottomY, commentBegin, commentEnd);
-          e.selectLinesBottomToTop(topY, bottomY, lastLineBreak);
+          e.selectLinesBottomToTop(topY, bottomY);
         }
       }
 
@@ -145,25 +142,25 @@ if (OUTPUT_MODE === 'ON') {
       alert('選択範囲が単一行の場合');
 
       //行選択
-      e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+      e.selectLinesTopToBottom(topY, bottomY);
       sel.Text = e.setLinesCommentOnOff(topY, bottomY,
-        lineCommentMark, lastLineBreak);
-      e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+        lineCommentMark);
+      e.selectLinesTopToBottom(topY, bottomY);
     } else {
       alert('選択範囲が複数行の場合');
       if (sel.GetActivePointY(eePosLogical) !== topY) {
         alert('複数行選択:上から下');
-        e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+        e.selectLinesTopToBottom(topY, bottomY);
         sel.Text = e.setLinesCommentOnOff(topY, bottomY,
-          lineCommentMark, lastLineBreak);
-        e.selectLinesTopToBottom(topY, bottomY, lastLineBreak);
+          lineCommentMark);
+        e.selectLinesTopToBottom(topY, bottomY);
 
       } else {
         alert('複数行選択:下から上');
-        e.selectLinesBottomToTop(topY, bottomY, lastLineBreak);
+        e.selectLinesBottomToTop(topY, bottomY);
         sel.Text = e.setLinesCommentOnOff(topY, bottomY,
-          lineCommentMark, lastLineBreak);
-        e.selectLinesBottomToTop(topY, bottomY, lastLineBreak);
+          lineCommentMark);
+        e.selectLinesBottomToTop(topY, bottomY);
       }
     }
 
